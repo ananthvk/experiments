@@ -16,3 +16,4 @@ This repository contains various personal programming experiments and small proj
 - **cppstarter** - Starter template for C++ header-only libraries
 - **godown** - Concurrent file downloader written in Go
 - **imgur-cli** - Simple CLI tool to upload files to Imgur anonymously
+- **procedural-map-generator** - Procedural map generation using noise
