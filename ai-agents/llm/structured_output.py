@@ -32,6 +32,9 @@ class WeatherParameters(BaseModel):
     """
 
     is_valid: bool
+    """
+    temperature in celsius
+    """
     temperature: float | None
     humidity: float | None
     date: datetime | None
