@@ -1,7 +1,8 @@
-from smolagents import OpenAIModel
+from openai import OpenAI
+from typing import List
 import os
 from dotenv import load_dotenv
-import pprint
+from openai.types.responses import ResponseInputItemParam
 
 load_dotenv()
 
@@ -16,12 +17,9 @@ api_base = os.environ["API_BASE"]
 api_key = os.environ["API_KEY"]
 model_name = os.environ["MODEL"]
 
-model = OpenAIModel(
-    api_base=api_base,
+client = OpenAI(
+    base_url=api_base,
     api_key=api_key,
-    model_id=model_name,
-    temperature=0.5,
-    max_tokens=1000,
 )
 
 print(f"=== Using model {model_name} from {api_base} ===")
@@ -42,7 +40,8 @@ SYSTEM_MESSAGE = f"""
 ### END SYSTEM PROMPT
 """
 
-messages = [
+
+messages: List[ResponseInputItemParam] = [
     {
         "role": "system",
         "content": SYSTEM_MESSAGE,
@@ -58,18 +57,23 @@ while True:
     if line.strip() == "exit":
         break
     messages.append({"role": "user", "content": line.strip()})
-    response = model(messages)
-    print(response.content)
-    if isinstance(response.content, str):
-        messages.append({"role": "assistant", "content": response.content})
-    else:
-        raise ValueError("not a str")
-    if response.token_usage:
+    response = client.responses.create(
+        model=model_name,
+        input=messages,
+        max_output_tokens=2000,
+        temperature=0.5,
+    )
+    print(response.output_text)
+    messages.append({"role": "assistant", "content": response.output_text})
+    if response.usage:
+        output_tokens = response.usage.output_tokens
+        total_tokens = response.usage.total_tokens
+        input_tokens = response.usage.input_tokens
         print(
-            f"[ input: {response.token_usage.input_tokens}, output: {response.token_usage.output_tokens}, total: {response.token_usage.total_tokens} ]"
+            f"[ input: {input_tokens}, output: {output_tokens}, total: {total_tokens} ]"
         )
-        cumul_input += response.token_usage.input_tokens
-        cumul_output += response.token_usage.output_tokens
+        cumul_input += input_tokens
+        cumul_output += output_tokens
         print(
             f"[ cumul_input: {cumul_input}, cumul_output: {cumul_output}, cumul_total: {cumul_input + cumul_output} ]"
         )
