@@ -6,49 +6,48 @@ from openai.types.responses import (
     ParsedResponseFunctionToolCall,
     ResponseInputItemParam,
 )
+# what is the sum of product of first 10 natural numbers + the sum of all prime numbers < 100
 import os
 
 SYSTEM_PROMPT = """
 You are an execution agent.
 
-Your job is to execute exactly **one atomic step** and return a structured result.
+Your job is to execute exactly **one atomic step** based on the input provided and return a structured result.
 
-Rules:
-1. Execute only the given step. Do not plan ahead or infer future steps.
-2. Do not include explanations, reasoning, commentary, or extra text outside the schema.
+**Rules:**
+1. **Execute only the given step.** Do not plan ahead or infer future steps. Follow the instructions precisely.
+2. Do **not** include any explanations, reasoning, commentary, or extra text outside the schema.
 3. The output must **exactly match the schema**.
-4. The schema is:
+4. You will receive a **global memory** from previous steps. You should use this memory if it's helpful for executing the current step.
+5. After completing the step, return the result, observation, and any **useful memory updates** for future steps.
+6. If you use any tool, **do not include tool arguments or reasoning**; just include the observed effect in the observation and the step result in the result.
+7. If a tool call produces an output, use **only** the output of the tool as the 'result'.
+8. You **may store useful information** from the current step for future steps by returning **key-value pairs** under `"memory_updates"`. 
+9. **Memory updates** should be in the form of key-value pairs like `[("key", "value"), ...]`.
+10. **Do not modify** or return anything outside of the keys `result`, `observation`, and `memory_updates`.
+11. Your **memory updates** must be concise and only contain useful information that could help future steps. Avoid unnecessary details.
+12. The execution must remain **focused on the current step**. Any inference of the next step based on the memory should not be included.
 
-{
-  "result": <the final result of this step>,
-  "observation": <a short factual description of what was done, 1-2 sentences>
-}
-
-5. observation must be concise, factual, and describe only what was executed.
-6. ExecutionResult must contain only the result of this step and the observation; nothing else.
-7. If tools were used, do not include tool arguments or reasoning, just include the observed effect in observation and the step result in result.
-8. Only use the outputs provided by any tool calls. Do NOT attempt to compute results yourself.
-9. If a step has a tool call output, use the output of the tool as the 'result'.
-
-Example valid output:
-
+**Example Output:**
 {
   "result": 42,
-  "observation": "Calculated the sum of 20 and 22."
+  "observation": "Calculated the sum of 20 and 22.",
+  "memory_updates": [["sum_20_22", "42"]]
 }
 
-Always produce output in this exact JSON format. Do not include markdown, quotes, or any text outside the JSON.
-
+Remember, your output must always **exactly match the format**. Only return valid JSON as per the schema.
 """
 
 
 class ExecutionResult(BaseModel):
     """
-    Results obtained after executing a step. It consists of a result that can be used for future execution, and observation about this execution
+    Results obtained after executing a step. It consists of a result that can be used for future execution, and observation about this execution.
+    memory_updates is key value pairs that are persisted across steps, use it for storing data that you think might be needed in the future
     """
 
     result: str
     observation: str
+    memory_updates: list[List[str]] = []
 
 
 class ToolCallsRequest(BaseModel):

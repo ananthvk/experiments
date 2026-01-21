@@ -22,6 +22,7 @@ if os.environ.get("MODEL") is None:
     raise ValueError("x MODEL environment variable not set")
 
 MAX_TOOL_TURNS = 8
+global_memory: dict[str, str] = {}
 
 
 def main():
@@ -52,18 +53,27 @@ def run(planner: Planner, executor: Executor, task: str):
 
     print(f"=== Execution ===")
     for i, step in enumerate(plan.steps):
-        print(f"== Step {i + 1} ==")
+        print(f"== Step {i + 1} Memory: {global_memory} ==")
         print(f"Step: {step}")
         turns = 0
         step_memory: List[ResponseInputItemParam] = []
         while True:
+            memory_context: ResponseInputItemParam = {
+                "role": "system",
+                "content": f"MEMORY: {global_memory}",
+            }
             if turns >= MAX_TOOL_TURNS:
                 # TODO: Later do graceful handling of error
                 raise RuntimeError(
                     f"Step {i+1} '{step}' exceeded tool call limit ({MAX_TOOL_TURNS})"
                 )
             turns += 1
-            result, output = executor.execute(step_memory, step, tools=tools)
+            result, output = executor.execute(
+                # Also pass in current memory
+                [memory_context] + step_memory,
+                step,
+                tools=tools,
+            )
             if result is None:
                 print(f"=== WARNING (result is None) ===")
                 break
@@ -95,10 +105,13 @@ def run(planner: Planner, executor: Executor, task: str):
                     }
                     tool_outputs.append(function_call_output)
                 step_memory.extend(tool_outputs)
-                #print("###", step_memory)
+                # print("###", step_memory)
             elif isinstance(result, ExecutionResult):
-                #print("***", step_memory)
-                print(f"=== Result of step {i+1} ===")
+                print("####", result.memory_updates)
+                for k, v in result.memory_updates:
+                    global_memory[k] = v
+                # print("***", step_memory)
+                print(f"=== Result of step {i+1} Memory: {global_memory} ===")
                 print(f"Result: {result.result}")
                 print(f"Observation: {result.observation}")
                 print()
