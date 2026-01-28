@@ -6,6 +6,7 @@ from openai.types.responses import (
     ParsedResponseFunctionToolCall,
     ResponseInputItemParam,
 )
+
 # what is the sum of product of first 10 natural numbers + the sum of all prime numbers < 100
 import os
 
@@ -27,6 +28,7 @@ Your job is to execute exactly **one atomic step** based on the input provided a
 10. **Do not modify** or return anything outside of the keys `result`, `observation`, and `memory_updates`.
 11. Your **memory updates** must be concise and only contain useful information that could help future steps. Avoid unnecessary details.
 12. The execution must remain **focused on the current step**. Any inference of the next step based on the memory should not be included.
+13. Make sure that you respect *max_output_tokens* parameter, and if necessary summarize the content to ensure that the response fits comfortably within the limit
 
 **Example Output:**
 {
@@ -43,6 +45,7 @@ class ExecutionResult(BaseModel):
     """
     Results obtained after executing a step. It consists of a result that can be used for future execution, and observation about this execution.
     memory_updates is key value pairs that are persisted across steps, use it for storing data that you think might be needed in the future
+    Make sure to escape the result from JSON values
     """
 
     result: str
@@ -78,13 +81,17 @@ class Executor:
         step: str,
         temperature=0.0,
         max_output_tokens=150,
+        max_tools=8,
         tools: list[ParseableToolParam] | None = None,
     ) -> Tuple[ExecutionResult | ToolCallsRequest | None, Any]:
         # Call the api
         if tools is None:
             tools = []
         context: List[ResponseInputItemParam] = [
-            {"role": "system", "content": SYSTEM_PROMPT},
+            {
+                "role": "system",
+                "content": f"{SYSTEM_PROMPT} max_output_tokens = {max_output_tokens} You have a maximum of {max_tools} attempts to use tools, so if you require more, try combining multiple uses into a single one. Use memory to store tool outputs",
+            },
             {"role": "user", "content": f"Step: {step}"},
         ]
         context += step_context

@@ -21,7 +21,7 @@ if os.environ.get("API_KEY") is None:
 if os.environ.get("MODEL") is None:
     raise ValueError("x MODEL environment variable not set")
 
-MAX_TOOL_TURNS = 8
+MAX_TOOL_TURNS = 15
 global_memory: dict[str, str] = {}
 
 
@@ -45,7 +45,7 @@ def main():
 
 
 def run(planner: Planner, executor: Executor, task: str):
-    plan = planner.plan(task, max_steps=50)
+    plan = planner.plan(task, max_steps=50, max_output_tokens=500)
     if plan is None:
         print("Could not generate plan")
         exit(1)
@@ -73,6 +73,8 @@ def run(planner: Planner, executor: Executor, task: str):
                 [memory_context] + step_memory,
                 step,
                 tools=tools,
+                max_output_tokens=2000,
+                max_tools = MAX_TOOL_TURNS
             )
             if result is None:
                 print(f"=== WARNING (result is None) ===")
