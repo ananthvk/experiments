@@ -5,8 +5,8 @@ description = "Default template for PDM package"
 authors = [
     {name = "ananthvk", email = "-"},
 ]
-dependencies = []
-requires-python = "==3.14.*"
+dependencies = ["jupyter>=1.1.1", "jupyterlab>=4.5.5", "numpy>=2.4.3", "scikit-learn>=1.8.0", "matplotlib>=3.10.8", "pandas>=3.0.1", "torch>=2.10.0"]
+requires-python = ">=3.14"
 readme = "README.md"
 license = {text = "MIT"}
 
@@ -49,3 +49,10 @@ dev = [
     "ruff>=0.15.4",
     "codespell>=2.4.1",
 ]
+
+[[tool.pdm.source]]
+name = "pytorch"
+url = "https://download.pytorch.org/whl/cpu"
+verify_ssl = true
+include_packages = ["torch", "torch-*", "pytorch"]
+exclude_packages = ["*"]
